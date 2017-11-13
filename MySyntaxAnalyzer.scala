@@ -14,8 +14,7 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer{
   override def gittex(token:String): Unit = {
     resetError()
     parser+=Compiler.currentToken
-    Compiler.currentToken="\\BEGIN\n\t"
-    if (Compiler.currentToken.equalsIgnoreCase("\\BEGIN\n\t")){
+    if (Compiler.currentToken.equalsIgnoreCase(Constants.DOCB)){
           addToken()
       println(Compiler.currentToken)
       if(Compiler.currentToken.equals(Constants.VARIABLEDEFINITIONS)){
