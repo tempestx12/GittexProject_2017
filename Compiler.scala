@@ -4,7 +4,7 @@ import scala.collection.mutable.ListBuffer
 
 object Compiler {
   var currentToken : String = ""
-  var fileContents : String = ""
+  var fileContents : String = " "
   var listLexeme=ListBuffer[String]()
   val Scanner = new MyLexicalAnalyzer
   val Parser = new MySyntaxAnalyzer
@@ -16,13 +16,13 @@ object Compiler {
     readFile(args(0))
     Scanner.start(fileContents)
     println(currentToken)
+   /*
    while(!currentToken.equals(Constants.DOCE)) {
      listLexeme += currentToken
      Scanner.getNextToken()
      println(currentToken)
    }
-    println("lexial finsher")
-    Scanner.start(fileContents)
+*/
     Parser.gittex(fileContents)
 System.exit(1)
   }

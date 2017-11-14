@@ -5,8 +5,8 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
   var nextChar: Char = ' '
   private var lexLength = 0
   private var position = 0
-  var sourceLine: String = " "
-  var lexmsToken = ListBuffer[String]()
+  var sourceLine: String = ""
+  var lexmsToken: ListBuffer[String] = ListBuffer[String]()
 
 
   //Function that starts the lexical Analyzer
@@ -14,13 +14,16 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
     initializeLexms()
     sourceLine = line
     position = 0
+    getChar()
     getNextToken()
   }
 
   //Adds input to the lexeme
   override def addChar(): Unit = {
-    lexLength += 1
-    lexeme += nextChar
+    if(position>0) {
+      lexLength += 1
+      lexeme += nextChar
+    }
   }
 
   //gets character input and returns next Char
@@ -28,18 +31,17 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
     if (position < sourceLine.length()) {
       nextChar = sourceLine.charAt(position)
       position += 1
-      return nextChar
+      nextChar
     } else {
       nextChar = '\\'
-      return nextChar
+      nextChar
     }
 
   }
 
   //gets non blank spaces and new lines until it encounters a Character
-  def getNonBlank(): Unit = {
+  def NonBlank(): Unit = {
     while (Constants.whiteSpace.contains(nextChar)) {
-      addChar()
       getChar()
     }
   }
@@ -48,15 +50,16 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
   override def getNextToken(): Unit = {
     lexLength = 0
     //If the current token is a white space or new line cycle until its not
-    getNonBlank()
+    if(Constants.whiteSpace.contains(nextChar)) {
+      NonBlank()
+    }
     //Add the first character you get
     //Checks to see if there are any special Symbols and processes them
-    addChar()
-    getChar()
+
     if (Constants.symbols.contains(nextChar)) {
       if (nextChar == '\\') {
         checkAnnon()
-      } else if (nextChar == '!') {
+      } else if (nextChar == '[') {
         checklink()
       } else {
         checkSymbol()
@@ -66,7 +69,7 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
         Compiler.currentToken = newToken
       }
       //if nextchar isnt a symbol or whitespace
-    } else if (nextChar!=(Constants.whiteSpace)) {
+    } else if (!Constants.whiteSpace.contains(nextChar)) {
       checkText()
       Compiler.currentToken = lexeme.mkString
     } else {
@@ -103,7 +106,7 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
       println("Lexical Error -" + canidate + "is not a legal token")
       return false
     }
-    return true
+    true
   }
 
   def checklink(): Unit = {
@@ -114,26 +117,20 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
   def checkAnnon(): Unit = {
     addChar()
     getChar()
-    while ((nextChar != '[') && !(Constants.whiteSpace.contains(nextChar))&& !(Constants.symbols.contains(nextChar))) {
+    while ((nextChar != '[') && !Constants.whiteSpace.contains(nextChar)&& !Constants.symbols.contains(nextChar)) {
       addChar()
       getChar()
-    }
-    if(nextChar=="["){
-      addChar()
     }
   }
 
   def checkSymbol(): Unit = {
-    addChar()
-    getChar()
-    if (nextChar == '[') {
-      checklink()
+      addChar()
+      getChar()
     }
-  }
 
   def checkText(): Unit = {
     if (position < sourceLine.length) {
-      while ((!Constants.symbols.contains(nextChar))) {
+      while (!Constants.symbols.contains(nextChar)) {
         addChar()
         getChar()
       }

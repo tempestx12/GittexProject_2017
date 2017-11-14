@@ -1,298 +1,294 @@
 package edu.towson.cis.cosc455buckman3project01
 
-import scala.collection.mutable.ListBuffer
+import edu.towson.cis.cosc455buckman3project01.Constants._
 
-class MySyntaxAnalyzer extends SyntaxAnalyzer{
-   var parser =ListBuffer[String]()
+import scala.collection.mutable
+
+class MySyntaxAnalyzer extends SyntaxAnalyzer {
+  var parser: mutable.Stack[String] = mutable.Stack[String]()
   var errorFound: Boolean = false
+
   def setError() = errorFound = true
 
   def resetError() = errorFound = false
 
   def getError: Boolean = errorFound
-//<gittex> ::= DOCB <variable-define> <title> <body> DOCE
-  override def gittex(token:String): Unit = {
+
+  //<gittex> ::= DOCB <variable-define> <title> <body> DOCE
+  override def gittex(token: String): Unit = {
     resetError()
-    parser+=Compiler.currentToken
-    if (Compiler.currentToken.equalsIgnoreCase(Constants.DOCB)){
-          addToken()
+    parser.push(Compiler.currentToken)
+    if (parser.top.equals(DOCB)) {
+      addToken()
       println(Compiler.currentToken)
-      if(Compiler.currentToken.equals(Constants.VARIABLEDEFINITIONS)){
+      if (parser.top.equals(VARIABLEDEFINITIONS)) {
         variableDefine()
       }
-      else if(Compiler.currentToken.equalsIgnoreCase(Constants.TITLEB)){
+      if (parser.top.equals(TITLEB)) {
         title()
-      }else if(Compiler.currentToken.equals(Constants.validText)){
+      }
+      if (checkValidText(parser.top)) {
         body()
       }
-      if(Compiler.currentToken.equalsIgnoreCase(Constants.DOCE)){
-      addToken()
+      if (Compiler.currentToken.equalsIgnoreCase(DOCE)) {
+        addToken()
         println("noice")
       }
 
     }
     else {
-      println("Error "+Compiler.currentToken+" is incorrect")
+      println("Error " + Compiler.currentToken + " is incorrect")
       setError()
       System.exit(1)
     }
   }
 
-//<title> ::= TITLEB REQTEXT BRACKETE
+  //<title> ::= TITLEB REQTEXT BRACKETE
   override def title(): Unit = {
-    if (Compiler.currentToken.equalsIgnoreCase(Constants.TITLEB)){
+    if (parser.top.equals(TITLEB)) {
       // add to parse tree / stack
-     addToken()
-      while(!Compiler.currentToken.equals(Constants.BRACKETE)){
-        if(Compiler.currentToken.equals(Constants.plainText)){
-          addToken()
-        }else{
-          setError()
-          println("Error"+Compiler.currentToken+" is incorrect")
-        }
-      }
       addToken()
-    }
-    else {
-      println("Error"+Compiler.currentToken+" is incorrect")
-      System.exit(1)
+      while ((!Compiler.currentToken.equals(BRACKETE)) && (!errorFound)) {
+        if (parser.top.equals(Constants.TitleS)) {
+          addToken()
+        } else if (checkValidText(parser.top)) {
+          addToken()
+        }
+        /*else {
+          setError()
+          println("Error" + parser.top + " is incorrect")
+        }
+        */
+      }
     }
   }
 
-/*
+  /*
 <body> ::= <inner-text> <body>
 | <paragraph> <body>
 | <newline> <body>
 | ε
  */
   override def body(): Unit = {
-    if (Compiler.currentToken.equalsIgnoreCase(Constants.PARAGRAPHB)){
+    if (parser.top.equals(PARAGRAPHB)) {
       paragraph()
       // add to parse tree / stack
-      Compiler.Scanner.getNextToken()
-    }else if(Compiler.currentToken.equals(Constants.BOLD)){
+    } else if (parser.top.equals(BOLD)) {
       bold()
-      Compiler.Scanner.getNextToken()
-    } else if(Compiler.currentToken.equals(Constants.UNORDEREDLIST)){
+    } else if (parser.top.equals(UNORDEREDLIST)) {
       listItem()
-      Compiler.Scanner.getNextToken()
-    }else if(Compiler.currentToken.equalsIgnoreCase(Constants.IMAGES)){
+    } else if (parser.top.equalsIgnoreCase(IMAGES)) {
       image()
-      Compiler.Scanner.getNextToken()
     }
     else {
       println("Error")
       System.exit(1)
     }
   }
-//<paragraph> ::= PARAB <variable-define> <inner-text> PARAE
+
+  //<paragraph> ::= PARAB <variable-define> <inner-text> PARAE
   override def paragraph(): Unit =
-    if (Compiler.currentToken.equalsIgnoreCase(Constants.PARAGRAPHB)) {
+    if (parser.top.equalsIgnoreCase(PARAGRAPHB)) {
       addToken()
-      while (!Compiler.currentToken.equalsIgnoreCase(Constants.PARAGRAPHE)) {
+      while (!parser.top.equalsIgnoreCase(PARAGRAPHE)) {
         // add to parse tree / stack
-        if(Compiler.currentToken.equalsIgnoreCase(Constants.VARIABLEDEFINITIONS)){
-        variableDefine()
-        }else if(Compiler.currentToken.equals(Constants.plainText)) {
+        if (parser.top.equalsIgnoreCase(VARIABLEDEFINITIONS)) {
+          variableDefine()
+        } else if (checkValidText(parser.top)) {
           innertext()
         }
       }
     }
-  else {
-    println("Error"+Compiler.currentToken+" is incorrect")
-    setError()
-    System.exit(1)
-  }
-//<heading> ::= HEADING REQTEXT | ε
+    else {
+      println("Error" + parser.top + " is incorrect")
+      setError()
+      System.exit(1)
+    }
+
+  //<heading> ::= HEADING REQTEXT | ε
   override def heading(): Unit = {
-    if(Compiler.currentToken.equals(Constants.HEADING)){
-      addToken()
-    }else if(Compiler.currentToken.equals(Nil)){
+    if (parser.top.equals(HEADING)) {
       addToken()
     }
-    else{
-      println("Error"+Compiler.currentToken+" is incorrect")
+    else {
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
- // <variable-define> ::= DEFB REQTEXT EQSIGN REQTEXT BRACKETE <variable-define> | ε
+
+  // <variable-define> ::= DEFB REQTEXT EQSIGN REQTEXT BRACKETE <variable-define> | ε
   override def variableDefine(): Unit = {
-    if(Compiler.currentToken.equalsIgnoreCase(Constants.VARIABLEDEFINITIONS)){
+    if (parser.top.equalsIgnoreCase(VARIABLEDEFINITIONS)) {
       addToken()
 
-      if(Compiler.currentToken.equals(Constants.plainText)) {
+      if (checkValidText(parser.top)) {
         addToken()
-        if (Compiler.currentToken.endsWith(Constants.EQSIGN)) {
-
+        if (parser.top.equals(EQSIGN)) {
           addToken()
-          if(Compiler.currentToken.equals(Constants.plainText)) {
+          if (checkValidText(parser.top)) {
             addToken()
-            if(Compiler.currentToken.equals(Constants.BRACKETE)){
+            if (Compiler.currentToken.equals(BRACKETE)) {
               addToken()
-              if(Compiler.currentToken.equals(Constants.VARIABLEDEFINITIONS)){
+              if (Compiler.currentToken.equals(VARIABLEDEFINITIONS)) {
                 variableDefine()
               }
-            }else{
+            } else {
               setError()
-              println("Error"+Compiler.currentToken+" is incorrect")
+              println("Error" + Compiler.currentToken + " is incorrect")
               System.exit(1)
             }
-          }else{
+          } else {
             setError()
-            println("Error"+Compiler.currentToken+" is incorrect")
+            println("Error" + Compiler.currentToken + " is incorrect")
             System.exit(1)
           }
-        }else{
+        } else {
           setError()
-          println("Error"+Compiler.currentToken+" is incorrect")
+          println("Error" + Compiler.currentToken + " is incorrect")
           System.exit(1)
         }
-      }else{
+      } else {
         setError()
-        println("Error"+Compiler.currentToken+" is incorrect")
+        println("Error" + Compiler.currentToken + " is incorrect")
         System.exit(1)
 
       }
-    }else if(Compiler.currentToken.equals(Nil)){
-      addToken()
     }
-    else
-    {
+    else {
       setError()
-      println("Error"+Compiler.currentToken+" is incorrect")
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
-//<variable-use> ::= USEB REQTEXT BRACKETE | ε
+
+  //<variable-use> ::= USEB REQTEXT BRACKETE | ε
 
   override def variableUse(): Unit = {
-    if(Compiler.currentToken.equals(Constants.VARIABLEUSAGE)){
+    if (parser.top.equals(VARIABLEUSAGE)) {
       addToken()
-      if(Compiler.currentToken.equals(Constants.plainText)){
+      if (checkValidText(parser.top)) {
         addToken()
-        if(Compiler.currentToken.equals(Constants.BRACKETE)){
+        if (parser.top.equals(BRACKETE)) {
           addToken()
-        }else{
+        } else {
           setError()
-          println("Error"+Compiler.currentToken+"is incorrect")
+          println("Error" + parser.top + "is incorrect")
           System.exit(1)
         }
-      }else{
+      } else {
         setError()
-        println("Error"+Compiler.currentToken+"is incorrect")
+        println("Error" + Compiler.currentToken + "is incorrect")
         System.exit(1)
       }
-    }else
-    {
+    } else {
       setError()
-      println("Error"+Compiler.currentToken+" is incorrect")
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
-//<bold> ::= BOLD TEXT BOLD | ε
+
+  //<bold> ::= BOLD TEXT BOLD | ε
   override def bold(): Unit = {
-    if(Compiler.currentToken.equals(Constants.BOLD)){
- addToken()
-      if(Compiler.currentToken.equals(Constants.validText)){
+    if (parser.top.equals(BOLD)) {
+      addToken()
+      if (checkValidText(parser.top)) {
         addToken()
-        if(Compiler.currentToken.equals((Constants.BOLD))){
+        if (parser.top.equals(BOLD)) {
           addToken()
         }
-        else{
+        else {
           setError()
-          println("Error"+Compiler.currentToken+"is incorrect")
+          println("Error" + Compiler.currentToken + "is incorrect")
           System.exit(1)
         }
-      }else{
+      } else {
         setError()
-        println("Error"+Compiler.currentToken+"is incorrect")
+        println("Error" + Compiler.currentToken + "is incorrect")
         System.exit(1)
       }
-    }else if(Compiler.currentToken.equals(Nil)){
-      addToken()
     }
-    else
-      {
-        setError()
-        println("Error"+Compiler.currentToken+" is incorrect")
-        System.exit(1)
-      }
+    else {
+      setError()
+      println("Error" + Compiler.currentToken + " is incorrect")
+      System.exit(1)
+    }
   }
+
   //<listitem> ::= LISTITEMB <inner-item> <list-item> | ε
   override def listItem(): Unit = {
-    if(Compiler.currentToken.equals(Constants.UNORDEREDLIST)){
-        addToken()
-        innerItem()
-    }else
-    {
-      println("Error"+Compiler.currentToken+" is incorrect")
+    if (parser.top.equals(UNORDEREDLIST)) {
+      addToken()
+      innerItem()
+    } else {
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
-//<link> ::= LINKB REQTEXT BRACKETE ADDRESSB REQTEXT ADDRESSE | ε
+
+  //<link> ::= LINKB REQTEXT BRACKETE ADDRESSB REQTEXT ADDRESSE | ε
   override def link(): Unit = {
-    if(Compiler.currentToken.equals(Constants.LINKB)){
-  addToken()
-      if(Compiler.currentToken.equals(Constants.plainText)){
+    if (parser.top.equals(LINKB)) {
+      addToken()
+      if (checkValidText(parser.top)) {
         addToken()
-        if(Compiler.currentToken.equals(Constants.BRACKETE)){
+        if (parser.top.equals(BRACKETE)) {
           addToken()
-          if(Compiler.currentToken.equals(Constants.ADDRESSB)){
+          if (parser.top.equals(ADDRESSB)) {
             address()
-          }else{
+          } else {
             setError()
-            println("Error"+Compiler.currentToken+" is incorrect")
+            println("Error" + parser.top + " is incorrect")
             System.exit(1)
           }
-        }else{
+        } else {
           setError()
-          println("Error"+Compiler.currentToken+" is incorrect")
+          println("Error" + Compiler.currentToken + " is incorrect")
           System.exit(1)
         }
-      }else{
+      } else {
         setError()
-        println("Error"+Compiler.currentToken+" is incorrect")
+        println("Error" + Compiler.currentToken + " is incorrect")
         System.exit(1)
       }
-    }else
-    {
+    } else {
       setError()
-      println("Error"+Compiler.currentToken+" is incorrect")
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
-//<image> ::= IMAGEB REQTEXT BRACKETE ADDRESSB REQTEXT ADDRESSE | ε
+
+  //<image> ::= IMAGEB REQTEXT BRACKETE ADDRESSB REQTEXT ADDRESSE | ε
   override def image(): Unit = {
-    if(Compiler.currentToken.equalsIgnoreCase(Constants.IMAGES)) {
+    if (parser.top.equalsIgnoreCase(IMAGES)) {
       addToken()
-      if (Compiler.currentToken.equals(Constants.plainText)) {
+      if (checkValidText(parser.top)) {
         addToken()
-        if (Compiler.currentToken.equals(Constants.BRACKETE)) {
+        if (parser.top.equals(BRACKETE)) {
           addToken()
-          if (Compiler.currentToken.equals(Constants.ADDRESSB)) {
+          if (parser.top.equals(ADDRESSB)) {
             address()
           }
         }
       }
 
-    } else if(Compiler.currentToken.equals(Nil)){
-      addToken()
-    }else{
+    } else {
       setError()
-      println("Error"+Compiler.currentToken+" is incorrect")
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
-//<newline> ::= NEWLINE | ε
+
+  //<newline> ::= NEWLINE | ε
   override def newline(): Unit = {
-    if(Compiler.currentToken.equals(Constants.NEWLINE)){
+    if (parser.top.equals(NEWLINE)) {
       addToken()
-    }else {
-      println("Error"+Compiler.currentToken+" is incorrect")
+    } else {
+      println("Error" + Compiler.currentToken + " is incorrect")
       System.exit(1)
     }
   }
-   /*
+
+  /*
    <inner-text> ::= <variable-use> <inner-text>
 | <heading> <inner-text>
 | <bold> <inner-text>
@@ -302,27 +298,28 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer{
 | TEXT <inner-text>
 | ε
     */
-   def innertext():Unit={
-     if(Compiler.currentToken.equalsIgnoreCase(Constants.VARIABLEUSAGE)){
-       variableUse()
-     }else if(Compiler.currentToken.equals(Constants.HEADING)){
-       heading()
-     }else if(Compiler.currentToken.equals(Constants.BOLD)){
-       bold()
-     }else if(Compiler.currentToken.equalsIgnoreCase(Constants.UNORDEREDLIST)){
-       listItem()
-     }else if(Compiler.currentToken.equals(Constants.IMAGES)){
-       image()
-     }else if(Compiler.currentToken.equals(Constants.LINKB)){
-       link()
-     }else if(Compiler.currentToken.equals(Constants.validText)){
-       addToken()
-     }else{
-       setError()
-       println("Error"+Compiler.currentToken+" is incorrect")
-       System.exit(1)
-     }
-   }
+  def innertext(): Unit = {
+    if (parser.top.equalsIgnoreCase(VARIABLEUSAGE)) {
+      variableUse()
+    } else if (parser.top.equals(HEADING)) {
+      heading()
+    } else if (parser.top.equals(BOLD)) {
+      bold()
+    } else if (parser.top.equalsIgnoreCase(UNORDEREDLIST)) {
+      listItem()
+    } else if (parser.top.equals(IMAGES)) {
+      image()
+    } else if (parser.top.equals(LINKB)) {
+      link()
+    } else if (checkValidText(parser.top)) {
+      addToken()
+    } else {
+      setError()
+      println("Error" + Compiler.currentToken + " is incorrect")
+      System.exit(1)
+    }
+  }
+
   /*
   <inner-item> ::= <variable-use> <inner- item>
 | <bold> <inner- item>
@@ -330,52 +327,56 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer{
 | REQTEXT <inner- item>
 | ε
    */
-   def innerItem():Unit={
-     if(Compiler.currentToken.equalsIgnoreCase(Constants.VARIABLEUSAGE)){
-       variableUse()
-     }else if(Compiler.currentToken.equals(Constants.BOLD)){
-       bold()
-     }else if(Compiler.currentToken.equals(Constants.LINKB)){
-       link()
-     }else if(Compiler.currentToken.equals(Constants.plainText)){
-     addToken()
-     }else if(Compiler.currentToken.equals(Nil)){
+  def innerItem(): Unit = {
+    if (parser.top.equalsIgnoreCase(VARIABLEUSAGE)) {
+      variableUse()
+    } else if (parser.top.equals(BOLD)) {
+      bold()
+    } else if (parser.top.equals(LINKB)) {
+      link()
+    } else if (checkValidText(parser.top)) {
       addToken()
-     }else{
-       setError()
-       println("Error"+Compiler.currentToken+" is incorrect")
-       System.exit(1)
-     }
-   }
-  def address(): Unit ={
-    if(Compiler.currentToken.equals(Constants.ADDRESSB)){
+    }  else {
+      setError()
+      println("Error" + Compiler.currentToken + " is incorrect")
+      System.exit(1)
+    }
+  }
+
+  def address(): Unit = {
+    if (parser.top.equals(ADDRESSB)) {
       addToken()
-      if(Compiler.currentToken.equals(Constants.plainText)){
+      if (checkValidText(parser.top)) {
         addToken()
-        if(Compiler.currentToken.equals(Constants.ADDRESSE)){
+        if (parser.top.equals(ADDRESSE)) {
           addToken()
-        }else{
+        } else {
           setError()
-          println("Error"+Compiler.currentToken+"is incorrect")
+          println("Error" + Compiler.currentToken + "is incorrect")
           System.exit(1)
         }
-      }else{
+      } else {
         setError()
-        println("Error"+Compiler.currentToken+"is incorrect")
+        println("Error" + Compiler.currentToken + "is incorrect")
         System.exit(1)
       }
-    }else{
+    } else {
       setError()
-      println("Error"+Compiler.currentToken+"is incorrect")
+      println("Error" + Compiler.currentToken + "is incorrect")
       System.exit(1)
     }
 
   }
-  def addToken(): Unit ={
+
+  def addToken(): Unit = {
+
     Compiler.Scanner.getNextToken()
-    parser+=Compiler.currentToken
+    println(Compiler.currentToken)
+    parser.push(Compiler.currentToken)
   }
 
-
-}
+  def checkValidText(candidate:String): Boolean = {
+    candidate.toLowerCase.toList.forall(x => Constants.validText.contains(x))
+  }
+  }
 
