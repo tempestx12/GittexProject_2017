@@ -20,21 +20,19 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
     parser.push(Compiler.currentToken)
     if (parser.top.equals(DOCB)) {
       addToken()
-      println(Compiler.currentToken)
-      if (parser.top.equals(VARIABLEDEFINITIONS)) {
-        variableDefine()
+      while(!parser.top.equals(DOCE)) {
+        if (parser.top.equalsIgnoreCase(VARIABLEDEFINITIONS)) {
+          variableDefine()
+        }
+        if (parser.top.equals(TITLEB)) {
+          title()
+        }
+        if (checkValidText(parser.top)) {
+          body()
+        }
       }
-      if (parser.top.equals(TITLEB)) {
-        title()
-      }
-      if (checkValidText(parser.top)) {
-        body()
-      }
-      if (Compiler.currentToken.equalsIgnoreCase(DOCE)) {
-        addToken()
-        println("noice")
-      }
-
+    }else if (parser.top.equals(DOCE)) {
+      println("noice")
     }
     else {
       println("Error " + Compiler.currentToken + " is incorrect")
@@ -45,21 +43,21 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
 
   //<title> ::= TITLEB REQTEXT BRACKETE
   override def title(): Unit = {
-    if (parser.top.equals(TITLEB)) {
+    if (parser.top.equalsIgnoreCase(TITLEB)) {
       // add to parse tree / stack
       addToken()
       while ((!Compiler.currentToken.equals(BRACKETE)) && (!errorFound)) {
-        if (parser.top.equals(Constants.TitleS)) {
+        if (parser.top.equals(Constants.LINKB)) {
           addToken()
         } else if (checkValidText(parser.top)) {
           addToken()
         }
-        /*else {
+        else {
           setError()
           println("Error" + parser.top + " is incorrect")
         }
-        */
       }
+      addToken()
     }
   }
 
@@ -70,7 +68,7 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
 | ε
  */
   override def body(): Unit = {
-    if (parser.top.equals(PARAGRAPHB)) {
+    if (parser.top.equalsIgnoreCase(PARAGRAPHB)) {
       paragraph()
       // add to parse tree / stack
     } else if (parser.top.equals(BOLD)) {
@@ -79,10 +77,12 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
       listItem()
     } else if (parser.top.equalsIgnoreCase(IMAGES)) {
       image()
+    }else if(parser.top.equalsIgnoreCase(NEWLINE)){
+      addToken()
     }
-    else {
-      println("Error")
-      System.exit(1)
+      else
+     if( checkValidText(parser.top)){
+      innertext()
     }
   }
 
@@ -109,10 +109,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
   override def heading(): Unit = {
     if (parser.top.equals(HEADING)) {
       addToken()
-    }
-    else {
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
     }
   }
 
@@ -154,11 +150,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
 
       }
     }
-    else {
-      setError()
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
-    }
   }
 
   //<variable-use> ::= USEB REQTEXT BRACKETE | ε
@@ -180,10 +171,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
         println("Error" + Compiler.currentToken + "is incorrect")
         System.exit(1)
       }
-    } else {
-      setError()
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
     }
   }
 
@@ -207,11 +194,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
         System.exit(1)
       }
     }
-    else {
-      setError()
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
-    }
   }
 
   //<listitem> ::= LISTITEMB <inner-item> <list-item> | ε
@@ -219,9 +201,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
     if (parser.top.equals(UNORDEREDLIST)) {
       addToken()
       innerItem()
-    } else {
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
     }
   }
 
@@ -235,10 +214,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
           addToken()
           if (parser.top.equals(ADDRESSB)) {
             address()
-          } else {
-            setError()
-            println("Error" + parser.top + " is incorrect")
-            System.exit(1)
           }
         } else {
           setError()
@@ -250,17 +225,13 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
         println("Error" + Compiler.currentToken + " is incorrect")
         System.exit(1)
       }
-    } else {
-      setError()
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
     }
   }
 
   //<image> ::= IMAGEB REQTEXT BRACKETE ADDRESSB REQTEXT ADDRESSE | ε
   override def image(): Unit = {
     if (parser.top.equalsIgnoreCase(IMAGES)) {
-      addToken()
+    /*  addToken()
       if (checkValidText(parser.top)) {
         addToken()
         if (parser.top.equals(BRACKETE)) {
@@ -269,12 +240,9 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
             address()
           }
         }
-      }
-
-    } else {
-      setError()
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
+      }*/
+      addToken()
+      link()
     }
   }
 
@@ -313,10 +281,6 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
       link()
     } else if (checkValidText(parser.top)) {
       addToken()
-    } else {
-      setError()
-      println("Error" + Compiler.currentToken + " is incorrect")
-      System.exit(1)
     }
   }
 
@@ -376,7 +340,8 @@ class MySyntaxAnalyzer extends SyntaxAnalyzer {
   }
 
   def checkValidText(candidate:String): Boolean = {
-    candidate.toLowerCase.toList.forall(x => Constants.validText.contains(x))
+    candidate.toLowerCase.toList.forall(x => Constants.validText.contains(x.toString()))
   }
+
   }
 

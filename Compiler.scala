@@ -1,16 +1,18 @@
 package edu.towson.cis.cosc455buckman3project01
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.Stack
 
 object Compiler {
   var currentToken : String = ""
   var fileContents : String = " "
-  var listLexeme=ListBuffer[String]()
+  var list=Stack[String]()
   val Scanner = new MyLexicalAnalyzer
   val Parser = new MySyntaxAnalyzer
   val SemanticAnalyzer = new MySyntaxAnalyzer
 
+
   def main(args: Array[String]): Unit = {
+
     val file= args(0)
     checkFile(args)
     readFile(args(0))
@@ -24,6 +26,8 @@ object Compiler {
    }
 */
     Parser.gittex(fileContents)
+    list=Parser.parser
+
 System.exit(1)
   }
 

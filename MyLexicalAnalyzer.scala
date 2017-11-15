@@ -41,7 +41,7 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
 
   //gets non blank spaces and new lines until it encounters a Character
   def NonBlank(): Unit = {
-    while (Constants.whiteSpace.contains(nextChar)) {
+    while (Constants.whiteSpace.contains(nextChar.toString)) {
       getChar()
     }
   }
@@ -50,7 +50,7 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
   override def getNextToken(): Unit = {
     lexLength = 0
     //If the current token is a white space or new line cycle until its not
-    if(Constants.whiteSpace.contains(nextChar)) {
+    if(Constants.whiteSpace.contains(nextChar.toString)) {
       NonBlank()
     }
     //Add the first character you get
@@ -69,7 +69,7 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
         Compiler.currentToken = newToken
       }
       //if nextchar isnt a symbol or whitespace
-    } else if (!Constants.whiteSpace.contains(nextChar)) {
+    } else if (!Constants.whiteSpace.contains(nextChar.toString)) {
       checkText()
       Compiler.currentToken = lexeme.mkString
     } else {
@@ -117,7 +117,12 @@ class MyLexicalAnalyzer extends LexicalAnalyzer {
   def checkAnnon(): Unit = {
     addChar()
     getChar()
-    while ((nextChar != '[') && !Constants.whiteSpace.contains(nextChar)&& !Constants.symbols.contains(nextChar)) {
+    if (nextChar != '\\') {
+    while ((nextChar != '[') && !Constants.whiteSpace.contains(nextChar.toString) && !Constants.symbols.contains(nextChar)) {
+      addChar()
+      getChar()
+    }
+  }else{
       addChar()
       getChar()
     }
